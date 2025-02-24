@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conteo Digital</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, darkgreen, green);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: white;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    .upload-box {
+      background: white;
+      color: black;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 5px;
+    }
+
+    .image-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .circle {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: black;
+      background: rgba(128, 128, 128, 0.5);
+    }
+
+    .circle.yellow {
+      background: rgba(255, 255, 0, 0.5);
+    }
+
+    .circle.blue {
+      background: rgba(0, 0, 255, 0.5);
+    }
+
+    .buttons {
+      margin: 20px 0;
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .buttons button.maduro {
+      background: yellow;
+      color: black;
+    }
+
+    .buttons button.verde {
+      background: blue;
+      color: white;
+    }
+
+    .slider-container {
+      margin: 20px 0;
+    }
+
+    .slider-container label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      background: white;
+      color: black;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    table, th, td {
+      border: 1px solid black;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    .download-button {
+      margin: 20px 0;
+    }
+
+    .download-button button {
+      padding: 10px 20px;
+      background: darkgreen;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Conteo Digital</h1>
+  <div class="container">
+    <div class="upload-box">
+      <p>Para nombrar la imagen, escriba un título aquí:</p>
+      <input type="text" id="title" placeholder="Escriba un título">
+      <button onclick="uploadImage()">Cargar Imagen</button>
+    </div>
+
+    <div class="image-container">
+      <img id="uploaded-image" src="" alt="Imagen Cargada">
+    </div>
+
+    <div class="buttons">
+      <button class="maduro" onclick="selectObject('maduro')">Maduros</button>
+      <button class="verde" onclick="selectObject('verde')">Verdes</button>
+      <button onclick="undo()">Deshacer</button>
+      <button onclick="refreshPage()">Actualizar Página</button>
+    </div>
+
+    <div class="slider-container">
+      <label for="circle-size">Ajustar Tamaño del Círculo:</label>
+      <input type="range" id="circle-size" min="10" max="100" value="50" oninput="updateCircleSize()">
+    </div>
+
+    <table id="count-table">
+      <thead>
+        <tr>
+          <th>Maduros</th>
+          <th>Verdes</th>
+          <th>Proporción (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="count-maduro">0</td>
+          <td id="count-verde">0</td>
+          <td id="ratio">0</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="download-button">
+      <button onclick="downloadCSV()">Descargar CSV</button>
+    </div>
+  </div>
+
+  <script>
+    let selectedObject = null;
+    let circleSize = 50;
+    let counts = { maduro: 0, verde: 0 };
+    let circles = [];
+    let imageUploaded = false;
+
+    function uploadImage() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = document.getElementById('uploaded-image');
+          img.src = event.target.result;
+          imageUploaded = true;
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
+
+    function selectObject(object) {
+      selectedObject = object;
+    }
+
+    function updateCircleSize() {
+      circleSize = document.getElementById('circle-size').value;
+    }
+
+    function addCircle(event) {
+      if (!imageUploaded || !selectedObject) return;
+
+      const rect = event.target.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      const circle = document.createElement('div');
+      circle.classList.add('circle');
+      circle.style.width = `${circleSize}px`;
+      circle.style.height = `${circleSize}px`;
+      circle.style.left = `${x - circleSize / 2}px`;
+      circle.style.top = `${y - circleSize / 2}px`; /* 50px más abajo */
+
+      if (selectedObject === 'maduro') {
+        circle.classList.add('yellow');
+        counts.maduro++;
+        circle.textContent = counts.maduro;
+      } else if (selectedObject === 'verde') {
+        circle.classList.add('blue');
+        counts.verde++;
+        circle.textContent = counts.verde;
+      }
+
+      document.querySelector('.image-container').appendChild(circle);
+      circles.push(circle);
+      updateTable();
+    }
+
+    function undo() {
+      if (circles.length > 0) {
+        const lastCircle = circles.pop();
+        if (lastCircle.classList.contains('yellow')) {
+          counts.maduro--;
+        } else if (lastCircle.classList.contains('blue')) {
+          counts.verde--;
+        }
+        lastCircle.remove();
+        updateTable();
+      }
+    }
+
+    function refreshPage() {
+      if (confirm('Si desea continuar perderá los datos realizados')) {
+        location.reload();
+      }
+    }
+
+    function updateTable() {
+      const total = counts.maduro + counts.verde;
+      const ratio = total === 0 ? 0 : ((counts.maduro / total) * 100).toFixed(2);
+      document.getElementById('count-maduro').textContent = counts.maduro;
+      document.getElementById('count-verde').textContent = counts.verde;
+      document.getElementById('ratio').textContent = ratio;
+    }
+
+    function downloadCSV() {
+      const title = document.getElementById('title').value || 'datos';
+      const csvContent = `data:text/csv;charset=utf-8,Maduros,Verdes,Proporción\n${counts.maduro},${counts.verde},${document.getElementById('ratio').textContent}%`;
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `${title}.csv`);
+      document.body.appendChild(link);
+      link.click();
+    }
+
+    document.getElementById('uploaded-image').addEventListener('click', addCircle);
+  </script>
+</body>
+</html>
