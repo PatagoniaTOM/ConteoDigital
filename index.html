@@ -163,7 +163,7 @@
             if (currentMode) {
                 const rect = this.getBoundingClientRect();
                 const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top + 50; // 50px más abajo
+                const y = event.clientY - rect.top;
 
                 const circle = document.createElement('div');
                 circle.className = 'circle';
